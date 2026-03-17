@@ -17,15 +17,22 @@ jobs:
       - name: Make scripts executable
         run: chmod +x build.sh upload.sh
 
+      - name: Define build parameters
+        id: params
+        run: |
+          appName="TestApp"
+          echo "app_name=$appName" >> "$GITHUB_OUTPUT"
+
       # CLI call to simulated build process
       - name: Run Build
         run: |
-          appName="Test App"
-          ./build.sh --platform Android --project-name "${appName}"
+          ./build.sh --platform Android --project-name "${{ steps.params.outputs.app_name }}"
 
       # CLI call to simulated upload process
       - name: Upload
         env: 
-          UPLOAD_TOKEN: $ {{ secrets.UPLOAD_TOKEN }}
+          UPLOAD_TOKEN: ${{ secrets.UPLOAD_TOKEN }}
         run: |
-          ./upload.sh android "build/Android/Test App.apk"
+          find "build/Android" -type f | while read ARTIFACT; do 
+            ./upload.sh android "$ARTIFACT"
+          done
