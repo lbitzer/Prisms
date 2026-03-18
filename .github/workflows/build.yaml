@@ -70,6 +70,13 @@ jobs:
             fi
             ./build.sh --platform Android --project-name "${{ steps.params.outputs.app_name }}" --version "${{ steps.params.outputs.version }}" $PROFILE_FLAG
 
+        - name: Save build artifacts
+          uses: actions/upload-artifact@v4
+          with:
+            name: build-Android-${{ steps.params.outputs.version }}
+            path: cli/build/Android/
+            retention-days: 30
+
         - name: Upload profiling data
           if: inputs.enable_profiling == true
           uses: actions/upload-artifact@v4
@@ -128,6 +135,13 @@ jobs:
             PROFILE_FLAG="--profile"
           fi
           ./build.sh --platform iOS --project-name "${{ steps.params.outputs.app_name }}" --version "${{ steps.params.outputs.version }}" $PROFILE_FLAG
+
+      - name: Save build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-iOS-${{ steps.params.outputs.version }}
+          path: cli/build/iOS/
+          retention-days: 30
 
       - name: Upload profiling data
         if: inputs.enable_profiling == true
