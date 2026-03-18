@@ -10,6 +10,9 @@ on:
       version:
         description: "Version string (e.g. 1.0.0). Leave blank to use commit SHA."
         required: false
+  push:
+    branches:
+      - production
 
 jobs:
   build:
@@ -44,6 +47,7 @@ jobs:
 
       # CLI call to simulated upload process
       - name: Upload
+        if: github.event_name == 'push' && github.ref == 'refs/heads/production'
         env: 
           UPLOAD_TOKEN: ${{ secrets.UPLOAD_TOKEN }}
         run: |
