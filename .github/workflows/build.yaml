@@ -7,6 +7,9 @@ on:
         description: "Application name"
         required: true
         default: "MyApp"
+      version:
+        description: "Version string (e.g. 1.0.0). Leave blank to use commit SHA."
+        required: false
 
 jobs:
   build:
@@ -27,6 +30,12 @@ jobs:
         run: |
           appName="${{ inputs.app_name }}"
           echo "app_name=$appName" >> "$GITHUB_OUTPUT"
+
+          version="${{ inputs.version }}"
+          if [[ -z "$version" ]]; then
+            version=$(git rev-parse --short HEAD)
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       # CLI call to simulated build process
       - name: Run Build
