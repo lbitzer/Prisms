@@ -32,6 +32,9 @@ jobs:
         id: params
         run: |
           appName="${{ inputs.app_name }}"
+          if [[ -z "$appName" ]]; then
+            appName="MyApp"
+          fi
           echo "app_name=$appName" >> "$GITHUB_OUTPUT"
 
           version="${{ inputs.version }}"
