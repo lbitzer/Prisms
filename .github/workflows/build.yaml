@@ -41,7 +41,7 @@ jobs:
 
     steps:
         - name: Checkout repository
-          uses: actions/checkout@v2
+          uses: actions/checkout@v4
           
         - name: Make scripts executable
           run: chmod +x build.sh upload.sh
@@ -100,7 +100,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         
       - name: Make scripts executable
         run: chmod +x build.sh upload.sh
@@ -145,4 +145,4 @@ jobs:
         run: |
           find "build/iOS" -type f | while read ARTIFACT; do 
             ./upload.sh iOS "$ARTIFACT"
-          done
+          doneg
