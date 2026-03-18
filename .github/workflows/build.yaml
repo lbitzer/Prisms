@@ -15,13 +15,85 @@ on:
         required: false
         default: false
         type: boolean
+      platform:
+        description: "Target Platform"
+        required: true
+        default: "both"
+        type: choice
+        options:
+          - android
+          - ios
+          - both
   push:
     branches:
       - production
 
 jobs:
-  build:
+  build-android:
     runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'push' || 
+      inputs.platform == 'both' ||
+      inputs.platform == 'android'
+    defaults:
+      run:
+        working-directory: ./cli
+
+    steps:
+        - name: Checkout repository
+          uses: actions/checkout@v2
+          
+        - name: Make scripts executable
+          run: chmod +x build.sh upload.sh
+
+        - name: Define build parameters
+          id: params
+          run: |
+            appName="${{ inputs.app_name }}"
+            if [[ -z "$appName" ]]; then
+              appName="MyApp"
+            fi
+            echo "app_name=$appName" >> "$GITHUB_OUTPUT"
+
+            version="${{ inputs.version }}"
+            if [[ -z "$version" ]]; then
+              version=$(git rev-parse --short HEAD)
+            fi
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+
+        # CLI call to simulated build process
+        - name: Run Build
+          run: |
+            PROFILE_FLAG=""
+            if [[ "${{ inputs.enable_profiling }}" == "true" ]]; then
+              PROFILE_FLAG="--profile"
+            fi
+            ./build.sh --platform Android --project-name "${{ steps.params.outputs.app_name }}" --version "${{ steps.params.outputs.version }}" $PROFILE_FLAG
+
+        - name: Upload profiling data
+          if: inputs.enable_profiling == true
+          uses: actions/upload-artifact@v4
+          with:
+            name: profiling-${{ steps.params.outputs.version }}
+            path: cli/build/Android/*.pro
+            if-no-files-found: ignore
+
+        # CLI call to simulated upload process
+        - name: Upload
+          if: github.event_name == 'push' && github.ref == 'refs/heads/production'
+          env: 
+            UPLOAD_TOKEN: ${{ secrets.UPLOAD_TOKEN }}
+          run: |
+            find "build/Android" -type f | while read ARTIFACT; do 
+              ./upload.sh android "$ARTIFACT"
+            done
+
+  build-ios:
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'push' || 
+      inputs.platform == 'both' ||
+      inputs.platform == 'ios'
     defaults:
       run:
         working-directory: ./cli
@@ -55,14 +127,14 @@ jobs:
           if [[ "${{ inputs.enable_profiling }}" == "true" ]]; then
             PROFILE_FLAG="--profile"
           fi
-          ./build.sh --platform Android --project-name "${{ steps.params.outputs.app_name }}" --version "${{ steps.params.outputs.version }}" $PROFILE_FLAG
+          ./build.sh --platform iOS --project-name "${{ steps.params.outputs.app_name }}" --version "${{ steps.params.outputs.version }}" $PROFILE_FLAG
 
       - name: Upload profiling data
         if: inputs.enable_profiling == true
         uses: actions/upload-artifact@v4
         with:
-          name: profiling -${{ steps.params.outputs.version }}
-          path: cli/build/Android/*.pro
+          name: profiling-${{ steps.params.outputs.version }}
+          path: cli/build/iOS/*.pro
           if-no-files-found: ignore
 
       # CLI call to simulated upload process
@@ -71,6 +143,6 @@ jobs:
         env: 
           UPLOAD_TOKEN: ${{ secrets.UPLOAD_TOKEN }}
         run: |
-          find "build/Android" -type f | while read ARTIFACT; do 
-            ./upload.sh android "$ARTIFACT"
+          find "build/iOS" -type f | while read ARTIFACT; do 
+            ./upload.sh iOS "$ARTIFACT"
           done
