@@ -40,7 +40,7 @@ jobs:
       # CLI call to simulated build process
       - name: Run Build
         run: |
-          ./build.sh --platform Android --project-name "${{ steps.params.outputs.app_name }}"
+          ./build.sh --platform Android --project-name "${{ steps.params.outputs.app_name }}" --version "${{ steps.params.outputs.version }}"
 
       # CLI call to simulated upload process
       - name: Upload
