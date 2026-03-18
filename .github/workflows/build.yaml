@@ -10,6 +10,11 @@ on:
       version:
         description: "Version string (e.g. 1.0.0). Leave blank to use commit SHA."
         required: false
+      enable_profiling:
+        description: "Enable build profiling"
+        required: false
+        default: false
+        type: boolean
   push:
     branches:
       - production
@@ -46,7 +51,19 @@ jobs:
       # CLI call to simulated build process
       - name: Run Build
         run: |
-          ./build.sh --platform Android --project-name "${{ steps.params.outputs.app_name }}" --version "${{ steps.params.outputs.version }}"
+          PROFILE_FLAG=""
+          if [[ "${{ inputs.enable_profiling }}" == "true" ]]; then
+            PROFILE_FLAG="--profile"
+          fi
+          ./build.sh --platform Android --project-name "${{ steps.params.outputs.app_name }}" --version "${{ steps.params.outputs.version }}" $PROFILE_FLAG
+
+      - name: Upload profiling data
+        if: inputs.enable_profiling == true
+        uses: actions/upload-artifact@v4
+        with:
+          name: profiling -${{ steps.params.outputs.version }}
+          path: cli/build/Android/*.pro
+          if-no-files-found: ignore
 
       # CLI call to simulated upload process
       - name: Upload
