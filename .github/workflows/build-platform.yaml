@@ -1,0 +1,83 @@
+name: Build Platform
+
+on:
+  workflow_call:
+    inputs:
+      app_name:
+        required: true
+        type: string
+      version:
+        required: false
+        type: string
+      platform:
+        required: true
+        type: string
+      enable_profiling:
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      UPLOAD_TOKEN:
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./cli
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Make scripts executable
+        run: chmod +x build.sh upload.sh
+
+      - name: Define build parameters
+        id: params
+        run: |
+          appName="${{ inputs.app_name }}"
+          if [[ -z "$appName" ]]; then
+            appName="MyApp"
+          fi
+          echo "app_name=$appName" >> "$GITHUB_OUTPUT"
+
+          version="${{ inputs.version }}"
+          if [[ -z "$version" ]]; then
+            version=$(git rev-parse --short HEAD)
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Run Build
+        run: |
+          PROFILE_FLAG=""
+          if [[ "${{ inputs.enable_profiling }}" == "true" ]]; then
+            PROFILE_FLAG="--profile"
+          fi
+          ./build.sh --platform ${{ inputs.platform }} --project-name "${{ steps.params.outputs.app_name }}" --version "${{ steps.params.outputs.version }}" $PROFILE_FLAG
+
+      - name: Save build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ inputs.platform }}-${{ steps.params.outputs.version }}
+          path: cli/build/${{ inputs.platform }}/
+          retention-days: 30
+
+      - name: Upload profiling data
+        if: inputs.enable_profiling == true
+        uses: actions/upload-artifact@v4
+        with:
+          name: profiling-${{ inputs.platform }}-${{ steps.params.outputs.version }}
+          path: cli/build/${{ inputs.platform }}/*.pro
+          if-no-files-found: ignore
+
+      - name: Upload
+        if: github.event_name == 'push' && github.ref == 'refs/heads/production'
+        env:
+          UPLOAD_TOKEN: ${{ secrets.UPLOAD_TOKEN }}
+        run: |
+          PLATFORM_LOWER=$(echo "${{ inputs.platform }}" | tr '[:upper:]' '[:lower:]')
+          find "build/${{ inputs.platform }}" -type f | while read ARTIFACT; do
+            ./upload.sh "$PLATFORM_LOWER" "$ARTIFACT"
+          done
