@@ -134,13 +134,13 @@ jobs:
           if [[ "${{ inputs.enable_profiling }}" == "true" ]]; then
             PROFILE_FLAG="--profile"
           fi
-          ./build.sh --platform ios --project-name "${{ steps.params.outputs.app_name }}" --version "${{ steps.params.outputs.version }}" $PROFILE_FLAG
+          ./build.sh --platform iOS --project-name "${{ steps.params.outputs.app_name }}" --version "${{ steps.params.outputs.version }}" $PROFILE_FLAG
 
       - name: Save build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-ios-${{ steps.params.outputs.version }}
-          path: cli/build/ios/
+          name: build-iOS-${{ steps.params.outputs.version }}
+          path: cli/build/iOS/
           retention-days: 30
 
       - name: Upload profiling data
@@ -148,7 +148,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: profiling-${{ steps.params.outputs.version }}
-          path: cli/build/ios/*.pro
+          path: cli/build/iOS/*.pro
           if-no-files-found: ignore
 
       # CLI call to simulated upload process
@@ -157,6 +157,6 @@ jobs:
         env: 
           UPLOAD_TOKEN: ${{ secrets.UPLOAD_TOKEN }}
         run: |
-          find "build/ios" -type f | while read ARTIFACT; do 
+          find "build/iOS" -type f | while read ARTIFACT; do 
             ./upload.sh ios "$ARTIFACT"
           done
